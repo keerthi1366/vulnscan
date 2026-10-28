@@ -44,15 +44,21 @@ py -m unittest discover -s tests -v
 
 The program prints a summary and writes timestamped JSON and CSV reports. Windows installed-software inventory uses read-only registry queries. Linux inventory uses `dpkg-query` or `rpm`; unavailable package managers are reported as a collection limitation. Firewall checks read Windows Defender Firewall profile state or Linux UFW status when available. Selected service checks inspect a short allowlist and report state/startup mode as observations; a running service is not called a vulnerability. With `--nvd`, only mapped product CPE names and versions are sent to NVD; the local hostname and full inventory are not sent.
 
-## Build plan
+## Features and implementation details
 
-1. **Inventory (starter):** collect OS identity and installed software names/versions with platform-native read-only queries.
-2. **Security checks (starter):** record firewall profile/status evidence and read-only state for selected services. These are observations, not compliance conclusions.
-3. **NVD integration (starter):** query the NIST NVD 2.0 API only when `--nvd` is supplied; use an optional API key from `NVD_API_KEY`, a request timeout, and conservative spacing. NVD responses are live, can be rate-limited, and may lack analysis for some CVEs.
-4. **Matching and prioritization (starter):** map a limited set of product names to verified CPE names before matching. Evaluate NVD start/end version bounds including inclusive/exclusive semantics. If product identity, version format, Boolean configuration, or range cannot be resolved, label it `uncertain`. Show the CVSS source, version, score and severity when supplied; do not invent a score. Python's Windows installer build number is normalized to the release in its display name, duplicate component CPEs are queried once, pagination is handled, and unbounded ranges that cross minor release lines are marked uncertain. Broader map coverage, response caching, and detailed configuration-tree evaluation remain useful future improvements.
-5. **Evidence and remediation (starter):** potential matches include the exact installed product/version, NVD criterion and matched range, CVE source URL, and a vendor-reference link when supplied. Guidance is a prompt to review a supported vendor update; it is not a confirmed fix or an automatic change.
-6. **Reports and tests (starter):** JSON and CSV include assessment time, host/OS inventory, observations, limitations, and findings. Tests cover parsing, version bounds, uncertain matches, and report output.
+- **System inventory:** Collects the operating system and installed software names and versions using read-only queries.
+- **Security checks:** Records Windows Firewall or Linux UFW status and the state of selected services as observations.
+- **Optional vulnerability lookup:** Queries the NIST National Vulnerability Database (NVD) API 2.0 when run with `--nvd`. Only explicitly mapped products are looked up.
+- **Version-range matching:** Compares detected versions with affected-version ranges in NVD data. Results are reported as potential matches or uncertain matches; they do not confirm that a system is vulnerable.
+- **Prioritization and evidence:** Includes available CVSS scores and severity, CVE links, and match details in findings.
+- **Reports:** Generates timestamped JSON and CSV reports, including assessment details and collection limitations.
+- **Unit tests:** Covers inventory, security checks, version matching, NVD handling, and report generation.
 
+## Safety and limitations
+
+VulnScan is a read-only local assessment tool. It does not exploit vulnerabilities, scan other hosts, or change system settings. Software without an explicit product mapping is skipped. NVD lookup is optional and enabled with `--nvd`; an API key can be provided through the `NVD_API_KEY` environment variable.
+
+**Limitations and future work:** Product mapping is limited; unmapped software is skipped. Broader product coverage, response caching, and more detailed configuration evaluation are future improvements.
 NVD API reference: [Vulnerability API](https://nvd.nist.gov/developers/vulnerabilities) and [CPE / Match Criteria APIs](https://nvd.nist.gov/developers/products). NVD responses can express affected version boundaries and may include CVSS metrics; the implementation preserves the source CVSS version and applicability evidence. NVD documents API-key use and request limits; the client uses a six-second gap between product lookups to keep requests deliberate.
 
 ## Safety and interpretation
@@ -67,7 +73,7 @@ NVD API reference: [Vulnerability API](https://nvd.nist.gov/developers/vulnerabi
 
 ```text
 vulnscan/
-  vulnscan/       application modules
-  tests/          standard-library unit tests
-  README.md
+├── vulnscan/
+├── tests/
+└── README.md
 ```
