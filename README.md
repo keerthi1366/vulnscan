@@ -1,73 +1,73 @@
 # VulnScan — Automated Vulnerability Assessment Tool
 
-A beginner-friendly, read-only local assessment tool. VulnScan inventories this machine, checks a small set of security settings, and can compare supported products with NIST NVD data. It does not exploit vulnerabilities, scan other hosts, or change system settings.
+VulnScan is a beginner-friendly, read-only tool for assessing the local computer. It collects system and software inventory, records selected security settings, and can compare supported products with data from the NIST National Vulnerability Database (NVD).
 
-## Status
+It does not exploit vulnerabilities, scan other hosts, or change system settings.
 
-Inventory, selected read-only checks, conservative version-range matching, JSON/CSV reporting, unit tests, and opt-in NVD API 2.0 lookups are included. The explicit NVD map currently covers selected products including Python, .NET, Microsoft Edge, Visual Studio Code, MySQL Server, MySQL Workbench/Shell, VirtualBox, 7-Zip, Firefox, Chrome, VLC, Git, and Node.js. Other inventory items are skipped rather than guessed, and the report lists the skipped count and examples.
+## Features
+
+- Collects operating system and installed-software names and versions using read-only queries.
+- Records Windows Firewall or Linux UFW status and the state of selected services as observations.
+- Optionally looks up explicitly mapped products using the NVD API 2.0.
+- Compares detected versions with NVD affected-version ranges. Results are potential matches, not confirmation that a system is vulnerable; uncertain comparisons are labeled accordingly.
+- Includes available CVSS scores, severity, CVE links, and match evidence in findings.
+- Generates timestamped JSON and CSV reports.
+- Includes unit tests for inventory, security checks, version matching, NVD handling, and report generation.
 
 ## Requirements
 
 - Python 3.10 or newer
 - Windows 10/11 or Linux
-- Optional NVD API key in `NVD_API_KEY` for live lookups (the key is not included in this project)
-
-No third-party packages are required for this starter.
+- No third-party Python packages required
+- Optional: an NVD API key set as the `NVD_API_KEY` environment variable
 
 ## Run
 
-From PowerShell:
+Open PowerShell in the project’s root folder—the folder containing `README.md`—and run:
 
 ```powershell
-cd .\work\vulnscan
 py -m vulnscan --out .\reports
 ```
 
-To opt into NVD lookups for supported products:
+To enable NVD lookups for supported products:
 
 ```powershell
 py -m vulnscan --nvd --out .\reports
 ```
 
-An API key is optional. If you have one, set it for the current PowerShell session before scanning (do not paste it into chat or save it in source):
+An API key is optional. To use one for the current PowerShell session:
 
 ```powershell
 $env:NVD_API_KEY = "your-key"
 py -m vulnscan --nvd --out .\reports
 ```
 
-If `py` is unavailable, use `python` in its place. To run the tests:
+Run the tests from the project’s root folder:
 
 ```powershell
 py -m unittest discover -s tests -v
 ```
 
-The program prints a summary and writes timestamped JSON and CSV reports. Windows installed-software inventory uses read-only registry queries. Linux inventory uses `dpkg-query` or `rpm`; unavailable package managers are reported as a collection limitation. Firewall checks read Windows Defender Firewall profile state or Linux UFW status when available. Selected service checks inspect a short allowlist and report state/startup mode as observations; a running service is not called a vulnerability. With `--nvd`, only mapped product CPE names and versions are sent to NVD; the local hostname and full inventory are not sent.
+If `py` is unavailable, try `python` instead.
 
-## Features and implementation details
+## Inventory and NVD matching
 
-- **System inventory:** Collects the operating system and installed software names and versions using read-only queries.
-- **Security checks:** Records Windows Firewall or Linux UFW status and the state of selected services as observations.
-- **Optional vulnerability lookup:** Queries the NIST National Vulnerability Database (NVD) API 2.0 when run with `--nvd`. Only explicitly mapped products are looked up.
-- **Version-range matching:** Compares detected versions with affected-version ranges in NVD data. Results are reported as potential matches or uncertain matches; they do not confirm that a system is vulnerable.
-- **Prioritization and evidence:** Includes available CVSS scores and severity, CVE links, and match details in findings.
-- **Reports:** Generates timestamped JSON and CSV reports, including assessment details and collection limitations.
-- **Unit tests:** Covers inventory, security checks, version matching, NVD handling, and report generation.
+On Windows, installed-software inventory uses read-only registry queries. On Linux, it uses `dpkg-query` or `rpm` when available. Firewall checks read Windows Defender Firewall profile status or Linux UFW status when available. Selected service checks report service state and startup mode as observations; a running service is not treated as a vulnerability.
 
-## Safety and limitations
+NVD lookup is opt-in. When enabled, VulnScan sends only the CPE names and versions for explicitly mapped products to NVD; it does not send the local hostname or full inventory. Products without an explicit mapping are skipped rather than guessed.
 
-VulnScan is a read-only local assessment tool. It does not exploit vulnerabilities, scan other hosts, or change system settings. Software without an explicit product mapping is skipped. NVD lookup is optional and enabled with `--nvd`; an API key can be provided through the `NVD_API_KEY` environment variable.
+NVD range matches are potential findings, not proof of exploitability or exposure. Product identity, vendor packaging, backported fixes, architecture, configuration, and incomplete version information can affect applicability. Missing or failed collection is reported as unknown, not secure.
 
-**Limitations and future work:** Product mapping is limited; unmapped software is skipped. Broader product coverage, response caching, and more detailed configuration evaluation are future improvements.
-NVD API reference: [Vulnerability API](https://nvd.nist.gov/developers/vulnerabilities) and [CPE / Match Criteria APIs](https://nvd.nist.gov/developers/products). NVD responses can express affected version boundaries and may include CVSS metrics; the implementation preserves the source CVSS version and applicability evidence. NVD documents API-key use and request limits; the client uses a six-second gap between product lookups to keep requests deliberate.
+## Safety
 
-## Safety and interpretation
+VulnScan is intended for devices you own or are authorized to assess. It performs read-only collection and does not change firewall, service, registry, or package settings. Do not commit API keys or personal scan reports to source control.
 
-- Only assess a device you own or are authorized to assess.
-- All collection in this scaffold is read-only; it makes no firewall, service, registry, or package changes.
-- An NVD range match is a potential affected-version match, not proof of exploitability or exposure. Distribution backports, vendor packaging, architecture, configuration, and product identity can change applicability.
-- Missing or failed collection is recorded as unknown, not as secure.
-- Do not put API keys or personal data in reports or source control.
+## Data source
+
+- [NIST NVD Vulnerability API](https://nvd.nist.gov/developers/vulnerabilities)
+- [NIST NVD CPE and Match Criteria APIs](https://nvd.nist.gov/developers/products)
+
+NVD data may include CVSS metrics and affected-version boundaries. VulnScan preserves the available CVSS source and applicability evidence. The client spaces product lookups by six seconds; requests may still be rate-limited.
 
 ## Project layout
 
